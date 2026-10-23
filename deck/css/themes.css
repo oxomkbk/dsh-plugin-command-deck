@@ -1,0 +1,596 @@
+/* COMMAND//DECK v5.6 — THEMES = DESIGN LANGUAGES
+   Thirteen themes in six families. Each one re-decides, on its own terms:
+     · the HUD LAYOUT (grid rows, gutters, dock widths — e.g. TERMINAL moves the bar to a bottom status line),
+     · the ANATOMY of a panel (title as a tab, a legend in the border, a vertical strip, a drawing title-block…),
+     · BUTTONS and how they press (keycaps, hard-shadow blocks, [ brackets ], pills, parallelograms),
+     · TYPOGRAPHY, OVERLAY TEXTURE (blueprint paper, CRT, hex armour, visor rim), MOTION (dock.js → MOTION),
+     · and the 3D WORLD behind it (js/core/themes.js → space.setTheme).
+   Panels are themed through tokens (--card-*) applied with enough specificity to beat the base dock rules.
+   Animations are transform / opacity only. */
+
+@font-face { font-family: 'Audiowide'; src: url('../vendor/fonts/audiowide-400.woff2') format('woff2'); font-display: swap; }
+@font-face { font-family: 'Chakra Petch'; src: url('../vendor/fonts/chakra-petch-500.woff2') format('woff2'); font-weight: 500; font-display: swap; }
+@font-face { font-family: 'Chakra Petch'; src: url('../vendor/fonts/chakra-petch-700.woff2') format('woff2'); font-weight: 600 900; font-display: swap; }
+@font-face { font-family: 'Exo 2'; src: url('../vendor/fonts/exo-2-var.woff2') format('woff2'); font-weight: 100 900; font-display: swap; }
+@font-face { font-family: 'Michroma'; src: url('../vendor/fonts/michroma-400.woff2') format('woff2'); font-display: swap; }
+@font-face { font-family: 'Oxanium'; src: url('../vendor/fonts/oxanium-var.woff2') format('woff2'); font-weight: 200 800; font-display: swap; }
+@font-face { font-family: 'Syncopate'; src: url('../vendor/fonts/syncopate-400.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Syncopate'; src: url('../vendor/fonts/syncopate-700.woff2') format('woff2'); font-weight: 700; font-display: swap; }
+@font-face { font-family: 'Tektur'; src: url('../vendor/fonts/tektur-var.woff2') format('woff2'); font-weight: 400 900; font-display: swap; }
+@font-face { font-family: 'VT323'; src: url('../vendor/fonts/vt323-400.woff2') format('woff2'); font-display: swap; }
+
+/* ───────── shared hooks ───────── */
+:root { --tilt: 6deg; --title-track: .16em; }
+body { background: var(--bg); transition: background-color .6s;
+  --card-bg: linear-gradient(180deg, rgba(var(--accent-rgb), .1), rgba(var(--ink), .74) 64px, rgba(var(--ink), .82));
+  --card-border: 1px solid rgba(var(--accent-rgb), .3); --card-radius: 0px; --card-clip: none;
+  --card-shadow: inset 0 1px 0 rgba(255, 255, 255, .06), 0 28px 56px -20px rgba(0, 0, 0, .85); --card-focus: 0 0 0 1px var(--accent), 0 0 26px rgba(var(--accent-rgb), .25); }
+.card-h .title { letter-spacing: var(--title-track); }
+/* every theme but the original ORBITAL styles its panels through the tokens (beats the #dock-* base rules) */
+body:not([data-theme="jarvis"]) :is(#hud, #max-layer) .card { background: var(--card-bg); border: var(--card-border); border-radius: var(--card-radius); box-shadow: var(--card-shadow); clip-path: var(--card-clip); }
+body:not([data-theme="jarvis"]) :is(#hud, #max-layer) .card.focus { box-shadow: var(--card-focus), var(--card-shadow); }
+body:not([data-theme="jarvis"]) :is(#hud, #max-layer) .card.grabbed { box-shadow: 0 0 0 2px var(--accent), 0 30px 60px rgba(0, 0, 0, .7); }
+
+/* 3D COCKPIT: the side docks curve toward you like wrap-around screens, the bottom dock tilts back like a console.
+   Each language sets its own --tilt (flat for the drawing, the terminal and the poster). dock.js adds .flat while a panel is lifted. */
+#dock-left { transform: perspective(1800px) rotateY(var(--tilt)); transform-origin: 0 50%; }
+#dock-right { transform: perspective(1800px) rotateY(calc(var(--tilt) * -1)); transform-origin: 100% 50%; }
+#dock-bottom { transform: perspective(1800px) rotateX(calc(var(--tilt) * .7)); transform-origin: 50% 100%; }
+.dock { transition: transform .7s cubic-bezier(.2,1,.3,1); }
+.dock.flat, body.no-tilt .dock, body.zoomed .dock { transform: none !important; transition: none; }
+
+/* theme switch: a light wave sweeps the screen while everything re-tints */
+#theme-wave { position: fixed; inset: 0; z-index: 88; pointer-events: none; opacity: 0;
+  background: linear-gradient(100deg, transparent 30%, rgba(var(--accent-rgb), .35) 47%, rgba(255, 255, 255, .55) 50%, rgba(var(--accent2-rgb), .35) 53%, transparent 62%); }
+#theme-wave.run { animation: themewave .9s cubic-bezier(.4,0,.2,1); }
+@keyframes themewave { 0% { opacity: 1; transform: translateX(-100%); } 100% { opacity: 1; transform: translateX(100%); } }
+
+/* languages that are not "holographic" drop the sci-fi bezel, light pulses and sweep beam; most drop the scanlines */
+body:is([data-theme="blueprint"], [data-theme="terminal"], [data-theme="brutal"], [data-theme="glass"], [data-theme="apollo"], [data-theme="monolith"], [data-theme="arctic"]) :is(#frame, #frame-fx, #beam) { display: none; }
+body:is([data-theme="blueprint"], [data-theme="brutal"], [data-theme="glass"], [data-theme="apollo"], [data-theme="monolith"], [data-theme="arctic"], [data-theme="aurora"], [data-theme="helmet"])::after { display: none; }
+body:is([data-theme="blueprint"], [data-theme="terminal"], [data-theme="brutal"]) .card > .sheen { display: none; }
+
+/* ══════════════════════════════════════════════════════════════════════════════════════════════
+   HOLOGRAPHIC
+   ══════════════════════════════════════════════════════════════════════════════════════════════ */
+/* ORBITAL (jarvis) — the original holo-cyan bridge: chamfered glass, glowing hairlines (base deck.css) */
+body[data-theme="jarvis"] { --tilt: 6deg; }
+
+/* AURORA — polar night, ribbons of light, frosted rounded glass, thin type */
+body[data-theme="aurora"] {
+  --bg: #01060c; --fg: #e4fff8; --dim: rgba(190, 240, 230, .6); --faint: rgba(94, 255, 200, .14); --line: rgba(94, 255, 200, .34);
+  --accent: #5effc8; --accent-rgb: 94, 255, 200; --accent2: #b388ff; --accent2-rgb: 179, 136, 255; --engine: #7dd8ff; --hot: #f4fffb;
+  --ink: 4, 18, 28; --on-accent: #022018; --input: #031520;
+  --ui: 'Exo 2', 'Rajdhani', var(--cjk); --disp: 'Exo 2', 'Orbitron', var(--cjk);
+  --glow: 0 0 10px rgba(94, 255, 200, .45), 0 0 34px rgba(179, 136, 255, .25); --tglow: 0 0 14px rgba(94, 255, 200, .45);
+  --card-radius: 22px; --card-border: 1px solid rgba(190, 255, 235, .22);
+  --card-bg: linear-gradient(160deg, rgba(150, 255, 225, .10), rgba(179, 136, 255, .06) 45%, rgba(4, 18, 28, .78) 70%), rgba(4, 18, 28, .55);
+  --tilt: 5deg; --title-track: .2em;
+}
+body[data-theme="aurora"] .card .crn, body[data-theme="aurora"] .card::before, body[data-theme="aurora"] .card::after { display: none; }
+body[data-theme="aurora"] .card-h { background: none; border-bottom-color: rgba(190, 255, 235, .14); border-radius: 22px 22px 0 0; padding-left: 16px; }
+body[data-theme="aurora"] .card-h::after { width: 46px; border-radius: 2px; background: linear-gradient(90deg, #5effc8, #b388ff); }
+body[data-theme="aurora"] .card-h .title { font-weight: 300; font-size: 15px; text-shadow: none; }
+body[data-theme="aurora"] .tb-title { font-weight: 300; letter-spacing: .5em; text-shadow: 0 0 22px rgba(94, 255, 200, .5); }
+body[data-theme="aurora"] .kpi b { font-weight: 300; }
+body[data-theme="aurora"] :is(.cb-btn, .btn, .chip.stat, .sb-actions .ico-btn, .rail-btn, .kpi, :where(#cmd), .toast, .plan-chip, :where(#ticker), .sb-ws button) { border-radius: 14px; clip-path: none; }
+body[data-theme="aurora"] :is(#cmd, #ticker) { border-radius: 14px; clip-path: none; }
+body[data-theme="aurora"] .cb-btn.run { background: linear-gradient(90deg, #5effc8, #7dd8ff 50%, #b388ff); color: #022018; }
+
+/* ══════════════════════════════════════════════════════════════════════════════════════════════
+   RETRO-FUTURE
+   ══════════════════════════════════════════════════════════════════════════════════════════════ */
+/* OUTRUN — chrome sunset over an endless grid */
+body[data-theme="synthwave"] {
+  --bg: #0d0221; --fg: #ffe6ff; --dim: rgba(255, 200, 250, .62); --faint: rgba(255, 106, 213, .16); --line: rgba(255, 106, 213, .42);
+  --accent: #ff6ad5; --accent-rgb: 255, 106, 213; --accent2: #ffd319; --accent2-rgb: 255, 211, 25; --engine: #c936ff; --hot: #fff6ff;
+  --ink: 22, 4, 44; --on-accent: #1a0533; --input: #12022a;
+  --ui: 'Exo 2', 'Rajdhani', var(--cjk); --disp: 'Audiowide', 'Orbitron', var(--cjk);
+  --glow: 0 0 8px rgba(255, 106, 213, .8), 0 0 30px rgba(201, 54, 255, .35); --tglow: 0 0 10px rgba(255, 106, 213, .7), 0 0 30px rgba(201, 54, 255, .45);
+  --card-radius: 14px; --card-border: 2px solid transparent;
+  --card-bg: linear-gradient(rgba(22, 4, 44, .84), rgba(22, 4, 44, .84)) padding-box, linear-gradient(120deg, #ff2975, #ffd319 40%, #c936ff) border-box;
+  --tilt: 7deg; --title-track: .1em;
+}
+body[data-theme="synthwave"] .card .crn, body[data-theme="synthwave"] .card::after { display: none; }
+body[data-theme="synthwave"] .card-h { background: linear-gradient(90deg, rgba(255, 41, 117, .28), rgba(201, 54, 255, .12) 55%, transparent); border-radius: 12px 12px 0 0; }
+body[data-theme="synthwave"] :is(.card-h .title, .tb-title, .kpi b) { background: linear-gradient(180deg, #ffffff 0%, #ffe6ff 38%, #ffd319 50%, #ff2975 66%, #c936ff 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: none; filter: drop-shadow(0 0 6px rgba(255, 106, 213, .55)); }
+body[data-theme="synthwave"] .card-h .title { font-family: var(--disp); font-weight: 400; }
+body[data-theme="synthwave"] :is(.cb-btn, .btn, .chip.stat, .sb-actions .ico-btn, .rail-btn, .sb-ws button) { border-radius: 10px; clip-path: none; }
+body[data-theme="synthwave"] :is(:where(#cmd), .plan-chip, :where(#ticker)) { border-radius: 26px; clip-path: none; }
+body[data-theme="synthwave"] :is(#cmd, #ticker) { border-radius: 26px; clip-path: none; }
+body[data-theme="synthwave"] .cb-btn.run { background: linear-gradient(90deg, #ff2975, #ff6ad5 50%, #ffd319); color: #1a0533; border-color: #ffd319; }
+body[data-theme="synthwave"] .kpi { border-radius: 10px; clip-path: none; }
+
+/* APOLLO '69 — mission-control hardware: every panel is a CRT set in a beige bezel under an engraved label plate,
+   buttons are keycaps that physically press, numbers are orange nixie tubes, the top bar is brushed metal */
+body[data-theme="apollo"] {
+  --bg: #121410; --fg: #e3f2e0; --dim: rgba(190, 215, 190, .62); --faint: rgba(255, 138, 61, .16); --line: rgba(255, 138, 61, .4);
+  --accent: #ff8a3d; --accent-rgb: 255, 138, 61; --accent2: #7fd6c2; --accent2-rgb: 127, 214, 194; --engine: #ffb066; --hot: #fff6e8;
+  --ink: 13, 19, 15; --on-accent: #1b1206; --input: #0b100c;
+  --ui: 'Exo 2', 'Rajdhani', var(--cjk); --disp: 'Michroma', 'Orbitron', var(--cjk); --hud: 'Oxanium', var(--mono);
+  --glow: 0 0 6px rgba(255, 120, 40, .8), 0 0 18px rgba(255, 100, 0, .4); --tglow: 0 0 6px rgba(255, 106, 0, .9), 0 0 20px rgba(255, 90, 0, .5);
+  --bezel: #c9bfa5; --bezel-hi: #efe6cf; --bezel-lo: #8a8270;
+  --card-radius: 16px; --card-border: 10px solid var(--bezel);
+  --card-bg: repeating-linear-gradient(0deg, rgba(0, 0, 0, .16) 0 1px, transparent 1px 3px), radial-gradient(130% 100% at 50% 35%, rgba(36, 58, 42, .97), rgba(8, 13, 10, .98));
+  --card-shadow: inset 0 0 0 1px rgba(0, 0, 0, .6), inset 0 0 34px rgba(0, 0, 0, .85), 0 0 0 1px var(--bezel-lo), 0 2px 0 3px rgba(0, 0, 0, .25), 0 22px 44px -14px rgba(0, 0, 0, .9);
+  --card-focus: 0 0 0 2px var(--accent);
+  --tilt: 8deg; --title-track: .24em;
+}
+body[data-theme="apollo"] :is(#hud, #max-layer) .card { border-top-width: 0; }
+body[data-theme="apollo"] .card .crn, body[data-theme="apollo"] .card::before, body[data-theme="apollo"] .card::after { display: none; }
+body[data-theme="apollo"] .card-h { margin: 0 -10px; height: 32px; padding: 0 10px 0 14px; border-radius: 14px 14px 0 0; border-bottom: 2px solid var(--bezel-lo);
+  background: linear-gradient(180deg, var(--bezel-hi), var(--bezel) 60%, #bdb398); box-shadow: inset 0 1px 0 #fff8e4; }
+body[data-theme="apollo"] .card-h::after { display: none; }
+body[data-theme="apollo"] .card-h .title { font: 400 11px var(--disp); color: #2a2418; text-shadow: 0 1px 0 rgba(255, 255, 255, .7); }
+body[data-theme="apollo"] .card-h .led { width: 9px; height: 9px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #ffd2a8, #ff6a00 60%, #8a2c00); box-shadow: 0 0 8px #ff6a00, inset 0 0 2px #000; }
+body[data-theme="apollo"] .card-h :is(.ico, .meta) { color: #5c5341; }
+body[data-theme="apollo"] .card-h .code { color: #2a2418; border-color: #8a8270; background: rgba(255, 255, 255, .35); }
+body[data-theme="apollo"] .card-btns button { color: #3a3324; }
+body[data-theme="apollo"] #dock-bottom { transform: perspective(1400px) rotateX(calc(var(--tilt) * 1.3)); }
+/* brushed-metal top bar with a recessed nixie title window */
+body[data-theme="apollo"] #topbar::before { background: repeating-linear-gradient(90deg, #b9af95 0 1px, #cbc1a7 1px 3px, #c3b99f 3px 4px); border-bottom: 2px solid var(--bezel-lo); }
+body[data-theme="apollo"] #topbar::after { display: none; }
+body[data-theme="apollo"] :is(.tb-left, .tb-right) { --fg: #2a2418; --dim: #5c5341; --hot: #1b1206; --accent: #b4520f; }
+body[data-theme="apollo"] .tb-center::before { background: var(--bezel-lo); }
+body[data-theme="apollo"] .tb-center::after { background: radial-gradient(120% 120% at 50% 30%, #1d1a14, #0b0a07); }
+body[data-theme="apollo"] .tb-title { font: 600 22px var(--hud); letter-spacing: .3em; color: #ffb066; text-shadow: var(--tglow); }
+body[data-theme="apollo"] .tb-sub { color: rgba(255, 176, 102, .6); }
+/* keycaps */
+body[data-theme="apollo"] :is(.cb-btn, .rail-btn, .sb-ws button, .sb-actions .ico-btn, .chip.stat, .btn) {
+  clip-path: none; border-radius: 6px; color: #2a2418; border: 1px solid var(--bezel-lo); background: linear-gradient(180deg, #f6eed8, #d2c8ad);
+  box-shadow: 0 3px 0 var(--bezel-lo), 0 6px 10px rgba(0, 0, 0, .45), inset 0 1px 0 #fff; transition: transform .06s, box-shadow .06s; }
+body[data-theme="apollo"] :is(.cb-btn, .rail-btn, .sb-ws button, .sb-actions .ico-btn, .chip.stat, .btn):active { transform: translateY(3px); box-shadow: 0 0 0 var(--bezel-lo), 0 2px 4px rgba(0, 0, 0, .4), inset 0 1px 0 #fff; }
+body[data-theme="apollo"] :is(.cb-btn.run, .sb-ws button.on, .chip.stat.on, .chip.stat.live, .rail-btn.on) { color: #2a0f00; background: linear-gradient(180deg, #ffd0a6, #ff8a3d); box-shadow: 0 3px 0 #9a4310, 0 0 16px rgba(255, 120, 40, .55), inset 0 1px 0 #ffe9d6; }
+body[data-theme="apollo"] .cb-btn:disabled { opacity: .55; }
+body[data-theme="apollo"] .cb-btn::before { display: none; }
+/* nixie-tube KPIs behind a honeycomb mesh */
+body[data-theme="apollo"] .kpi { clip-path: none; border: 6px solid var(--bezel); border-radius: 10px; box-shadow: inset 0 0 18px rgba(0, 0, 0, .95), 0 0 0 1px var(--bezel-lo);
+  background: radial-gradient(circle, rgba(255, 140, 60, .1) 1px, transparent 1.6px) 0 0 / 5px 5px, radial-gradient(120% 90% at 50% 110%, rgba(255, 110, 30, .18), transparent 60%), #0c0b09; }
+body[data-theme="apollo"] .kpi span { color: #b8ad92; font-family: var(--disp); font-size: 8.5px; }
+body[data-theme="apollo"] .kpi b { font: 600 28px/1.1 var(--hud); color: #ffb066; text-shadow: var(--tglow); }
+body[data-theme="apollo"] .kpi.hero b { font-size: 22px; color: #9fe8c8; text-shadow: 0 0 6px #3dffb0, 0 0 16px rgba(60, 255, 170, .5); }
+/* recessed screen command line, Dymo-tape ticker, embossed plan labels */
+body[data-theme="apollo"] #cmd { clip-path: none; border: 6px solid var(--bezel); border-radius: 12px; background: #0b100c; box-shadow: inset 0 0 18px rgba(0, 0, 0, .9), 0 0 0 1px var(--bezel-lo); }
+body[data-theme="apollo"] #ticker { clip-path: none; border-radius: 3px; background: #141414; border: 0; color: #f4f4f4; font: 400 11px var(--disp); letter-spacing: .2em; box-shadow: inset 0 1px 0 #333, 0 2px 4px rgba(0, 0, 0, .6); }
+body[data-theme="apollo"] .plan-chip { clip-path: none; border-radius: 4px; background: linear-gradient(#e9e0c6, #cbc1a6); color: #2a2418; border-color: var(--bezel-lo); }
+body[data-theme="apollo"] .plan-chip b { color: #9a4310; }
+
+/* ══════════════════════════════════════════════════════════════════════════════════════════════
+   STREET · EDGE
+   ══════════════════════════════════════════════════════════════════════════════════════════════ */
+/* NEON NOIR — rain-slick megacity: chamfered blades, chromatic split, glitch flicker */
+body[data-theme="neon"] {
+  --bg: #05000a; --fg: #ffe3fa; --dim: rgba(255, 190, 240, .6); --faint: rgba(255, 43, 214, .16); --line: rgba(255, 43, 214, .42);
+  --accent: #ff2bd6; --accent-rgb: 255, 43, 214; --accent2: #00f0ff; --accent2-rgb: 0, 240, 255; --engine: #ff2bd6; --hot: #fff4fd;
+  --ink: 10, 0, 16; --on-accent: #12001a; --input: #0a0010;
+  --ui: 'Chakra Petch', 'Rajdhani', var(--cjk); --disp: 'Tektur', 'Orbitron', var(--cjk);
+  --glow: 0 0 6px rgba(255, 43, 214, .9), 0 0 24px rgba(255, 43, 214, .4); --tglow: 2px 0 0 rgba(0, 240, 255, .7), -2px 0 0 rgba(255, 43, 214, .8), 0 0 18px rgba(255, 43, 214, .55);
+  --card-border: 1px solid rgba(255, 43, 214, .5); --card-clip: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
+  --card-bg: linear-gradient(135deg, rgba(255, 43, 214, .1), transparent 40%, rgba(0, 240, 255, .06)), rgba(10, 0, 16, .86);
+  --tilt: 7deg; --title-track: .12em;
+}
+body[data-theme="neon"] .card .crn { display: none; }
+body[data-theme="neon"] .card-h { background: linear-gradient(90deg, rgba(255, 43, 214, .32), rgba(255, 43, 214, .05) 60%, transparent); }
+body[data-theme="neon"] .card-h::before { content: ''; position: absolute; left: -10px; top: 0; bottom: 0; width: 64px; background: rgba(0, 240, 255, .22); transform: skewX(-24deg); pointer-events: none; }
+body[data-theme="neon"] .card-h .title { font-weight: 700; text-shadow: 1.5px 0 0 rgba(0, 240, 255, .8), -1.5px 0 0 rgba(255, 43, 214, .9); }
+body[data-theme="neon"] .tb-title { font-weight: 900; letter-spacing: .26em; }
+body[data-theme="neon"] .tb-title::after { content: attr(data-text); position: absolute; inset: 0; padding: inherit; color: #00f0ff; opacity: 0; pointer-events: none; animation: neonglitch 6s steps(1) infinite; }
+@keyframes neonglitch { 0%, 91%, 100% { opacity: 0; transform: none; } 92% { opacity: .8; transform: translate(3px, -1px); } 94% { opacity: .6; transform: translate(-4px, 1px); } 96% { opacity: 0; } }
+body[data-theme="neon"]::after { background: repeating-linear-gradient(0deg, rgba(0, 0, 0, .22) 0 1px, transparent 1px 3px); }
+body[data-theme="neon"] :is(.kpi b, .tb-title) { text-shadow: var(--tglow); }
+body[data-theme="neon"] .cb-btn.run { background: linear-gradient(90deg, #ff2bd6, #b026ff); border-color: #ff2bd6; color: #fff; }
+body[data-theme="neon"] #vignette { background: radial-gradient(ellipse 75% 70% at 50% 46%, transparent 55%, rgba(10, 0, 20, .7) 100%), linear-gradient(180deg, transparent 70%, rgba(255, 43, 214, .07)); }
+
+/* MECHA — battle-unit interface: panels carry their name on a VERTICAL purple strip, hazard tape under the top bar,
+   parallelogram KPIs and buttons, hex armour texture, acid-green type */
+body[data-theme="mecha"] {
+  --bg: #050505; --fg: #eaffd0; --dim: rgba(200, 255, 150, .55); --faint: rgba(157, 255, 0, .15); --line: rgba(157, 255, 0, .42);
+  --accent: #9dff00; --accent-rgb: 157, 255, 0; --accent2: #ff6a00; --accent2-rgb: 255, 106, 0; --engine: #8f4bff; --hot: #f5ffe6;
+  --ink: 9, 6, 16; --on-accent: #0a0f00; --input: #08050f; --purple: #5b2bd6;
+  --ui: 'Chakra Petch', 'Rajdhani', var(--cjk); --disp: 'Chakra Petch', 'Orbitron', var(--cjk);
+  --glow: 0 0 6px rgba(157, 255, 0, .8), 0 0 18px rgba(157, 255, 0, .3); --tglow: 0 0 8px rgba(157, 255, 0, .6);
+  --card-border: 1px solid rgba(157, 255, 0, .5); --card-clip: polygon(0 0, calc(100% - 26px) 0, 100% 26px, 100% 100%, 0 100%);
+  --card-bg: repeating-linear-gradient(60deg, rgba(157, 255, 0, .035) 0 1px, transparent 1px 14px), repeating-linear-gradient(-60deg, rgba(157, 255, 0, .035) 0 1px, transparent 1px 14px), rgba(9, 6, 16, .88);
+  --tilt: 9deg; --title-track: .22em;
+}
+body[data-theme="mecha"] :is(#hud, #max-layer) .card { flex-direction: row; }
+body[data-theme="mecha"] .card .crn, body[data-theme="mecha"] .card::before, body[data-theme="mecha"] .card::after { display: none; }
+body[data-theme="mecha"] .card-h { writing-mode: vertical-rl; transform: rotate(180deg); width: 34px; height: auto; flex: none; padding: 10px 0 6px; gap: 10px;
+  background: linear-gradient(90deg, #3a1a8f, var(--purple)); border: 0; border-left: 3px solid var(--accent); }
+body[data-theme="mecha"] .card-h::after, body[data-theme="mecha"] .card-h .ico, body[data-theme="mecha"] .card-h .meta { display: none; }
+body[data-theme="mecha"] .card-h .led { width: 10px; height: 10px; background: var(--accent2); box-shadow: 0 0 8px var(--accent2); }
+body[data-theme="mecha"] .card-h .title { font: 700 14px var(--disp); letter-spacing: .12em; color: #fff; text-shadow: none; }
+body[data-theme="mecha"] .card-h .code { display: none; }
+body[data-theme="mecha"] .card-btns button { width: 24px; height: 22px; }
+body[data-theme="mecha"] .card-btns { margin-top: auto; }
+body[data-theme="mecha"] .card-body { flex: 1; }
+body[data-theme="mecha"] #topbar::after { left: -14px; right: -14px; height: 7px; bottom: 2px; background: repeating-linear-gradient(-45deg, #ff6a00 0 10px, #050505 10px 20px); opacity: .9; }
+body[data-theme="mecha"] .tb-center::before { background: var(--purple); }
+body[data-theme="mecha"] .tb-title { font: 700 28px var(--disp); font-style: italic; letter-spacing: .1em; color: var(--accent); text-shadow: 0 0 10px rgba(157, 255, 0, .6); }
+body[data-theme="mecha"] .kpi { clip-path: none; transform: skewX(-14deg); background: linear-gradient(180deg, rgba(91, 43, 214, .35), rgba(9, 6, 16, .8)); border: 1px solid rgba(157, 255, 0, .55); border-top: 3px solid var(--accent); }
+body[data-theme="mecha"] .kpi > * { transform: skewX(14deg); }
+body[data-theme="mecha"] .kpi b { font: 700 30px/1.1 var(--disp); font-style: italic; color: var(--accent); }
+body[data-theme="mecha"] .kpi.hero { border-top-color: var(--accent2); } body[data-theme="mecha"] .kpi.hero b { color: var(--accent2); font-size: 24px; }
+body[data-theme="mecha"] :is(.cb-btn, .rail-btn, .sb-ws button, .plan-chip) { clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%); background: rgba(91, 43, 214, .45); border-color: transparent; color: #fff; padding-left: 16px; padding-right: 16px; }
+body[data-theme="mecha"] :is(.cb-btn, .rail-btn, .sb-ws button):hover { background: var(--accent); color: #0a0f00; }
+body[data-theme="mecha"] :is(.cb-btn.run, .sb-ws button.on) { background: var(--accent); color: #0a0f00; }
+body[data-theme="mecha"] #ticker { clip-path: polygon(14px 0, 100% 0, calc(100% - 14px) 100%, 0 100%); background: var(--accent2); color: #000; border: 0; font-weight: 700; }
+body[data-theme="mecha"] #ticker i { background: #000; box-shadow: none; }
+body[data-theme="mecha"] #vignette { background: radial-gradient(ellipse 72% 68% at 50% 46%, transparent 55%, rgba(0, 0, 0, .7) 100%),
+  repeating-linear-gradient(60deg, rgba(143, 75, 255, .05) 0 1px, transparent 1px 22px), repeating-linear-gradient(-60deg, rgba(143, 75, 255, .05) 0 1px, transparent 1px 22px); }
+
+/* ══════════════════════════════════════════════════════════════════════════════════════════════
+   TECHNICAL
+   ══════════════════════════════════════════════════════════════════════════════════════════════ */
+/* BLUEPRINT — an engineering drawing: grid paper over the world, hairline frames with registration crosses,
+   the panel title moves DOWN into a drawing title-block, dimension lines above each sheet, hatch-fill hovers. Flat. */
+body[data-theme="blueprint"] {
+  --bg: #0b2d5c; --fg: #e8f1ff; --dim: rgba(232, 241, 255, .62); --faint: rgba(232, 241, 255, .16); --line: rgba(232, 241, 255, .5);
+  --accent: #e8f1ff; --accent-rgb: 232, 241, 255; --accent2: #ff6b5b; --accent2-rgb: 255, 107, 91; --engine: #cfe2ff; --hot: #ffffff;
+  --ink: 11, 45, 92; --on-accent: #0b2d5c; --input: #0d3466; --warn: #ffd447; --ok: #9dffcf;
+  --ui: 'Exo 2', 'Rajdhani', var(--cjk); --disp: 'Michroma', 'Orbitron', var(--cjk); --hud: 'Share Tech Mono', var(--mono);
+  --glow: 0 0 0 transparent; --glow2: 0 0 0 transparent; --tglow: none;
+  --card-bg: rgba(11, 45, 92, .74); --card-border: 1px solid rgba(232, 241, 255, .78); --card-shadow: none; --card-focus: 0 0 0 1px var(--accent2);
+  --tilt: 0deg; --title-track: .2em;
+}
+body[data-theme="blueprint"] #vignette { background:
+  linear-gradient(rgba(232, 241, 255, .05) 1px, transparent 1px) 0 0 / 24px 24px, linear-gradient(90deg, rgba(232, 241, 255, .05) 1px, transparent 1px) 0 0 / 24px 24px,
+  linear-gradient(rgba(232, 241, 255, .1) 1px, transparent 1px) 0 0 / 120px 120px, linear-gradient(90deg, rgba(232, 241, 255, .1) 1px, transparent 1px) 0 0 / 120px 120px,
+  radial-gradient(ellipse 80% 75% at 50% 46%, transparent 60%, rgba(4, 20, 45, .6) 100%); }
+body[data-theme="blueprint"] .card::before { display: none; }
+body[data-theme="blueprint"] .card .crn { width: 18px; height: 18px; border: 0; color: rgba(232, 241, 255, .9);
+  background: linear-gradient(currentColor, currentColor) center / 1px 100% no-repeat, linear-gradient(currentColor, currentColor) center / 100% 1px no-repeat; }
+body[data-theme="blueprint"] .card .crn.a { left: -9px; top: -9px; } body[data-theme="blueprint"] .card .crn.b { right: -9px; top: -9px; }
+body[data-theme="blueprint"] .card .crn.c { left: -9px; bottom: -9px; } body[data-theme="blueprint"] .card .crn.d { right: -9px; bottom: -9px; }
+body[data-theme="blueprint"] .card.focus .crn, body[data-theme="blueprint"] .card.hand-hover .crn { width: 26px; height: 26px; filter: none; color: var(--accent2); }
+body[data-theme="blueprint"] .card::after { left: 0; right: 0; top: -11px; height: 7px; background: linear-gradient(transparent 3px, rgba(232, 241, 255, .5) 3px, rgba(232, 241, 255, .5) 4px, transparent 4px);
+  border-left: 1px solid rgba(232, 241, 255, .5); border-right: 1px solid rgba(232, 241, 255, .5); }
+body[data-theme="blueprint"] .card-body { order: 1; }
+body[data-theme="blueprint"] .card-h { order: 5; height: 30px; padding: 0; gap: 0; background: none; border-bottom: 0; border-top: 1px solid rgba(232, 241, 255, .7); }
+body[data-theme="blueprint"] .card-h > * { height: 100%; display: flex; align-items: center; padding: 0 9px; }
+body[data-theme="blueprint"] .card-h > * + * { border-left: 1px solid rgba(232, 241, 255, .45); }
+body[data-theme="blueprint"] .card-h::after, body[data-theme="blueprint"] .card-h .led { display: none; }
+body[data-theme="blueprint"] .card-h .ico { width: 30px; color: var(--accent); }
+body[data-theme="blueprint"] .card-h .title { font: 400 10.5px var(--disp); color: var(--hot); text-shadow: none; }
+body[data-theme="blueprint"] .card-h .code { border: 0; color: var(--accent2); font: 400 9px var(--hud); }
+body[data-theme="blueprint"] .card-h .code::before { content: 'DWG\00a0'; color: var(--dim); }
+body[data-theme="blueprint"] .card-h .meta { font: 400 11px var(--hud); justify-content: flex-end; }
+body[data-theme="blueprint"] :is(.cb-btn, .rail-btn, .sb-ws button, .sb-actions .ico-btn, .chip.stat, .plan-chip, .btn) { clip-path: none; border-radius: 0; background: transparent; border: 1px solid rgba(232, 241, 255, .7); color: var(--fg); box-shadow: none; }
+body[data-theme="blueprint"] :is(.cb-btn, .rail-btn, .sb-ws button, .sb-actions .ico-btn, .chip.stat, .btn):is(:hover, .hand-hover, .on) { background: repeating-linear-gradient(45deg, rgba(232, 241, 255, .28) 0 2px, transparent 2px 6px); color: #fff; }
+body[data-theme="blueprint"] .cb-btn.run { border-color: var(--accent2); color: var(--accent2); }
+body[data-theme="blueprint"] .kpi { clip-path: none; background: rgba(11, 45, 92, .6); border: 1px solid rgba(232, 241, 255, .7); text-align: left; padding-left: 12px; }
+body[data-theme="blueprint"] .kpi span { font: 400 9px var(--hud); letter-spacing: .2em; }
+body[data-theme="blueprint"] .kpi b { font: 400 22px var(--disp); text-shadow: none; }
+body[data-theme="blueprint"] .kpi.hero b { color: var(--accent2); text-shadow: none; }
+body[data-theme="blueprint"] #topbar::before { background: rgba(11, 45, 92, .92); border-bottom: 1px solid rgba(232, 241, 255, .7); }
+body[data-theme="blueprint"] #topbar::after { display: none; }
+body[data-theme="blueprint"] .tb-center::before { background: rgba(232, 241, 255, .8); }
+body[data-theme="blueprint"] .tb-center::after { background: #0b2d5c; }
+body[data-theme="blueprint"] .tb-title { font: 400 19px var(--disp); letter-spacing: .4em; text-shadow: none; }
+body[data-theme="blueprint"] #ticker { clip-path: none; border: 1px solid rgba(232, 241, 255, .7); background: rgba(11, 45, 92, .85); font: 400 13px var(--hud); }
+body[data-theme="blueprint"] #ticker i { background: none; border: 1px solid var(--accent2); box-shadow: none; }
+body[data-theme="blueprint"] #cmd { clip-path: none; border: 1px solid rgba(232, 241, 255, .8); background: rgba(11, 45, 92, .9); }
+body[data-theme="blueprint"] .gz-readout { border-color: rgba(232, 241, 255, .6); background: none; font-family: var(--hud); }
+
+/* TERMINAL — amber VT220 running tmux: no gutters (panes tile edge to edge), the top bar becomes a bottom STATUS LINE,
+   each pane's name sits IN its double border (┤ NAME ├), buttons are [ bracketed ] text, the prompt is a shell */
+body[data-theme="terminal"] {
+  --bg: #0a0600; --fg: #ffcc66; --dim: rgba(255, 176, 0, .55); --faint: rgba(255, 176, 0, .18); --line: rgba(255, 176, 0, .5);
+  --accent: #ffb000; --accent-rgb: 255, 176, 0; --accent2: #ffe8b0; --accent2-rgb: 255, 232, 176; --engine: #ff8c00; --hot: #ffe2a0;
+  --ink: 10, 6, 0; --on-accent: #0a0600; --input: #0a0600; --ok: #ffe8b0; --warn: #ffffff; --err: #ff5a3c;
+  --ui: 'VT323', 'Share Tech Mono', var(--cjk); --disp: 'VT323', 'Share Tech Mono', var(--cjk); --hud: 'VT323', var(--mono); --mono: 'VT323', 'Share Tech Mono', var(--cjk);
+  --glow: 0 0 6px rgba(255, 176, 0, .7); --glow2: 0 0 6px rgba(255, 232, 176, .7); --tglow: 0 0 6px rgba(255, 176, 0, .8);
+  --card-bg: rgba(10, 6, 0, .93); --card-border: 3px double rgba(255, 176, 0, .85); --card-shadow: none; --card-focus: 0 0 0 1px var(--accent2);
+  --gap: 0px; --tilt: 0deg; --title-track: .06em;
+  font-size: 17px; text-shadow: 0 0 5px rgba(255, 176, 0, .45);
+}
+body[data-theme="terminal"] #hud { gap: 0; padding: 12px 0 0; grid-template-rows: minmax(0, 1fr) var(--bot-h) 58px 28px; }
+body[data-theme="terminal"].no-bottom #hud { grid-template-rows: minmax(0, 1fr) 0 58px 28px; }
+body[data-theme="terminal"] #topbar { grid-row: 4; }
+body[data-theme="terminal"] :is(#dock-left, #dock-right) { grid-row: 1 / 3; }
+body[data-theme="terminal"] #center { grid-row: 1; padding: 6px 10px 0; }
+body[data-theme="terminal"] #dock-bottom { grid-row: 2; }
+body[data-theme="terminal"] #cmdbar { grid-row: 3; padding: 0 8px; border-top: 3px double rgba(255, 176, 0, .85); background: #0a0600; }
+body[data-theme="terminal"] #space { opacity: .5; }
+body[data-theme="terminal"]::after { background: repeating-linear-gradient(0deg, rgba(0, 0, 0, .35) 0 1px, transparent 1px 3px); }
+body[data-theme="terminal"] #vignette { background: radial-gradient(ellipse 70% 65% at 50% 50%, transparent 55%, rgba(0, 0, 0, .85) 100%); animation: crt 4s steps(2) infinite; }
+@keyframes crt { 50% { opacity: .93; } }
+body[data-theme="terminal"] .card { margin-top: 12px; }
+body[data-theme="terminal"] .card .crn, body[data-theme="terminal"] .card::before, body[data-theme="terminal"] .card::after { display: none; }
+body[data-theme="terminal"] .card-h { position: absolute; top: -13px; left: 10px; right: 8px; height: 22px; padding: 0; background: none; border: 0; z-index: 6; }
+body[data-theme="terminal"] .card-h::after, body[data-theme="terminal"] .card-h :is(.led, .ico, .code, .meta) { display: none; }
+body[data-theme="terminal"] .card-h .title { flex: none; background: var(--bg); padding: 0 4px; font: 400 21px var(--disp); color: var(--accent); }
+body[data-theme="terminal"] .card-h .title::before { content: '┤ '; } body[data-theme="terminal"] .card-h .title::after { content: ' ├'; }
+body[data-theme="terminal"] .card-btns { margin-left: auto; background: var(--bg); }
+body[data-theme="terminal"] .card-btns button { color: var(--accent); }
+body[data-theme="terminal"] .card-body { padding-top: 16px; }
+/* status line */
+body[data-theme="terminal"] #topbar { gap: 0; --fg: #0a0600; --dim: rgba(10, 6, 0, .7); --hot: #000; --accent: #000; --accent-rgb: 0, 0, 0; --line: #000; --faint: rgba(0, 0, 0, .25); text-shadow: none; }
+body[data-theme="terminal"] #topbar::before { left: 0; right: 0; background: #ffb000; }
+body[data-theme="terminal"] #topbar::after { display: none; }
+body[data-theme="terminal"] :is(.tb-left, .tb-right) { padding: 0 8px; gap: 8px; }
+body[data-theme="terminal"] .tb-center { min-width: 0; padding: 0 16px; }
+body[data-theme="terminal"] .tb-center::before, body[data-theme="terminal"] .tb-center::after, body[data-theme="terminal"] .tb-sub, body[data-theme="terminal"] .tb-cell { display: none; }
+body[data-theme="terminal"] .tb-title { font: 400 22px var(--disp); letter-spacing: .1em; color: #000; text-shadow: none; padding: 0; }
+body[data-theme="terminal"] .tb-title::before { content: '[0] '; }
+body[data-theme="terminal"] .tb-clock { flex-direction: row; gap: 8px; align-items: baseline; }
+body[data-theme="terminal"] .tb-clock b { font: 400 20px var(--disp); color: #000; text-shadow: none; }
+body[data-theme="terminal"] .tb-clock span { margin: 0; color: #000; }
+body[data-theme="terminal"] :is(.chip.stat, .sb-actions .ico-btn, .sb-state) { height: 22px; width: auto; min-width: 22px; padding: 0 5px; flex-direction: row; gap: 4px; border: 0; background: none; color: #000; clip-path: none; box-shadow: none; }
+body[data-theme="terminal"] .chip.stat span { font: 400 16px var(--disp); max-width: none; }
+body[data-theme="terminal"] .chip.stat > i { position: static; width: 6px; height: 6px; }
+body[data-theme="terminal"] .sb-state b { font: 400 18px var(--disp); }
+/* [ bracketed ] buttons */
+body[data-theme="terminal"] :is(.cb-btn, .rail-btn, .sb-ws button, .btn) { clip-path: none; border: 0; background: none; color: var(--accent); box-shadow: none; font: 400 19px var(--disp); }
+body[data-theme="terminal"] :is(.cb-btn, .sb-ws button)::before { content: '[ '; position: static; inset: auto; background: none; opacity: 1; transition: none; }
+body[data-theme="terminal"] :is(.cb-btn, .sb-ws button)::after { content: ' ]'; position: static; inset: auto; border: 0; opacity: 1; animation: none; transform: none; }
+body[data-theme="terminal"] :is(.cb-btn, .rail-btn, .sb-ws button, .btn):is(:hover, .hand-hover, .on):not(:disabled) { background: var(--accent); color: #0a0600; text-shadow: none; }
+body[data-theme="terminal"] .sb-ws button.on { background: var(--accent); color: #0a0600; }
+body[data-theme="terminal"] #cmd { clip-path: none; border: 0; background: none; box-shadow: none; height: 42px; }
+body[data-theme="terminal"] #cmd .glyph { font-size: 0; } body[data-theme="terminal"] #cmd .glyph::before { content: 'deck@hud:~$'; font: 400 21px var(--disp); }
+body[data-theme="terminal"] #cmd::before, body[data-theme="terminal"] #cmd::after { display: none; }
+body[data-theme="terminal"] #prompt { font: 400 21px var(--disp); }
+body[data-theme="terminal"] .kpi { clip-path: none; background: none; border: 0; border-right: 1px dashed rgba(255, 176, 0, .4); text-align: left; padding-left: 10px; }
+body[data-theme="terminal"] .kpi b { font: 400 34px/1 var(--disp); }
+body[data-theme="terminal"] .kpi span { font: 400 15px var(--disp); letter-spacing: .1em; }
+body[data-theme="terminal"] .plan-chip { clip-path: none; border: 0; background: none; font: 400 17px var(--disp); }
+body[data-theme="terminal"] .plan-chip.run { background: var(--accent); color: #0a0600; }
+body[data-theme="terminal"] #ticker { clip-path: none; border: 0; background: none; font: 400 19px var(--disp); }
+body[data-theme="terminal"] #ticker i { display: none; } body[data-theme="terminal"] #ticker span::before { content: '> '; }
+body[data-theme="terminal"] .gz-readout { border: 0; background: none; font-family: var(--disp); }
+
+/* ══════════════════════════════════════════════════════════════════════════════════════════════
+   EDITORIAL · RAW
+   ══════════════════════════════════════════════════════════════════════════════════════════════ */
+/* BRUTALIST — raw poster design: opaque paper blocks with 3 px ink borders and HARD offset shadows, giant system grotesk,
+   a black masthead with a yellow title, buttons that physically press into their shadow, zero glow, zero gradients. Flat. */
+body[data-theme="brutal"] {
+  --bg: #111; --fg: #111; --dim: rgba(17, 17, 17, .66); --faint: rgba(17, 17, 17, .2); --line: #111;
+  --accent: #111; --accent-rgb: 17, 17, 17; --accent2: #ff3b00; --accent2-rgb: 255, 59, 0; --engine: #ffe500; --hot: #000;
+  --ink: 241, 238, 230; --on-accent: #ffe500; --input: #fff; --ok: #007a3d; --warn: #b36b00; --err: #d40000; --yellow: #ffe500;
+  --ui: 'Helvetica Neue', 'Arial', var(--cjk); --disp: 'Arial Black', 'Helvetica Neue', 'Arial', var(--cjk); --hud: 'Courier New', var(--mono);
+  --glow: 0 0 0 transparent; --glow2: 0 0 0 transparent; --tglow: none;
+  --card-bg: #f1eee6; --card-border: 3px solid #111; --card-shadow: 8px 8px 0 #111; --card-focus: 0 0 0 3px var(--yellow);
+  --gap: 20px; --tilt: 0deg; --title-track: -.01em;
+}
+body[data-theme="brutal"] #hud { padding: 0 22px 14px; column-gap: 24px; }
+body[data-theme="brutal"] :is(#hud, #max-layer) .card { transition: transform .12s, box-shadow .12s; }
+body[data-theme="brutal"] :is(#hud, #max-layer) .card:hover { transform: translate(-2px, -2px); box-shadow: 10px 10px 0 #111; }
+body[data-theme="brutal"] .card .crn, body[data-theme="brutal"] .card::before, body[data-theme="brutal"] .card::after { display: none; }
+body[data-theme="brutal"] .card-h { height: 42px; background: var(--yellow); border-bottom: 3px solid #111; }
+body[data-theme="brutal"] .card-h::after, body[data-theme="brutal"] .card-h .led { display: none; }
+body[data-theme="brutal"] .card-h .title { font: 900 21px var(--disp); text-transform: uppercase; color: #111; text-shadow: none; }
+body[data-theme="brutal"] .card-h .code { background: #111; color: var(--yellow); border: 0; font: 700 10px var(--hud); padding: 2px 5px; }
+body[data-theme="brutal"] .card-h :is(.ico, .meta) { color: #111; }
+body[data-theme="brutal"] .card-btns button { color: #111; }
+/* masthead */
+body[data-theme="brutal"] #topbar { --fg: #f1eee6; --dim: rgba(241, 238, 230, .6); --hot: #fff; --accent: #ffe500; --accent-rgb: 255, 229, 0; --ink: 17, 17, 17; --on-accent: #111; --line: #ffe500; }
+body[data-theme="brutal"] #topbar::before { left: -22px; right: -22px; background: #111; }
+body[data-theme="brutal"] #topbar::after { display: none; }
+body[data-theme="brutal"] .tb-center::before, body[data-theme="brutal"] .tb-center::after { display: none; }
+body[data-theme="brutal"] .tb-title { font: 900 38px/1 var(--disp); letter-spacing: -.03em; color: var(--yellow); text-shadow: none; margin: 0; }
+body[data-theme="brutal"] .tb-sub { letter-spacing: .2em; color: #f1eee6; }
+body[data-theme="brutal"] .tb-sub i { background: var(--yellow); box-shadow: none; }
+body[data-theme="brutal"] :is(.chip.stat, .sb-actions .ico-btn) { clip-path: none; border: 2px solid var(--yellow); color: var(--yellow); background: #111; box-shadow: none; }
+/* blocks that press */
+body[data-theme="brutal"] :is(.cb-btn, .rail-btn, .sb-ws button, .btn, .plan-chip, .gz-readout, .kpi, :where(#cmd), :where(#ticker), .suggest button) { clip-path: none; border-radius: 0; border: 3px solid #111; box-shadow: 5px 5px 0 #111; background: #f1eee6; color: #111; }
+body[data-theme="brutal"] :is(#cmd, #ticker) { clip-path: none; border-radius: 0; border: 3px solid #111; box-shadow: 5px 5px 0 #111; background: #f1eee6; color: #111; }
+body[data-theme="brutal"] :is(.cb-btn, .rail-btn, .sb-ws button, .btn) { transition: transform .08s, box-shadow .08s; font: 900 13px var(--disp); }
+body[data-theme="brutal"] :is(.cb-btn, .rail-btn, .sb-ws button, .btn):hover:not(:disabled) { transform: translate(-2px, -2px); box-shadow: 7px 7px 0 #111; background: var(--yellow); }
+body[data-theme="brutal"] :is(.cb-btn, .rail-btn, .sb-ws button, .btn):active:not(:disabled) { transform: translate(5px, 5px); box-shadow: 0 0 0 #111; }
+body[data-theme="brutal"] :is(.cb-btn.run, .sb-ws button.on) { background: #111; color: var(--yellow); }
+body[data-theme="brutal"] .cb-btn::before, body[data-theme="brutal"] .cb-btn.run::after { display: none; }
+body[data-theme="brutal"] #kpi .kpi { background: var(--yellow); text-align: left; padding: 6px 12px 10px; }
+body[data-theme="brutal"] #kpi .kpi.hero { background: #111; }
+body[data-theme="brutal"] .kpi span { color: #111; font: 700 10px var(--hud); letter-spacing: .1em; }
+body[data-theme="brutal"] .kpi b { font: 900 38px/1 var(--disp); color: #111; text-shadow: none; letter-spacing: -.03em; }
+body[data-theme="brutal"] .kpi.hero { background: #111; } body[data-theme="brutal"] .kpi.hero :is(span, b) { color: var(--yellow); }
+body[data-theme="brutal"] .kpi i { display: none; }
+body[data-theme="brutal"] #ticker { background: #111; color: var(--yellow); box-shadow: 5px 5px 0 var(--yellow); font: 700 14px var(--hud); }
+body[data-theme="brutal"] #ticker i { background: var(--yellow); box-shadow: none; transform: none; }
+body[data-theme="brutal"] .plan-chip { box-shadow: 3px 3px 0 #111; font: 700 11px var(--hud); }
+body[data-theme="brutal"] .plan-chip.run { background: var(--yellow); }
+body[data-theme="brutal"] #cmd { height: 52px; } body[data-theme="brutal"] #cmd .glyph { color: #111; text-shadow: none; font-weight: 900; }
+body[data-theme="brutal"] #cmd::before, body[data-theme="brutal"] #cmd::after { display: none; }
+body[data-theme="brutal"] #prompt { color: #111; font: 700 18px var(--ui); }
+body[data-theme="brutal"] :is(.ws-wrap > span, .cmd-over, #voice-line, .suggest > span) { color: #f1eee6; }
+body[data-theme="brutal"] #vignette { background: none; }
+body[data-theme="brutal"] .gz-readout { box-shadow: 4px 4px 0 #111; font-family: var(--hud); }
+
+/* MONOLITH — obsidian and gold, quiet luxury: hairline gold rules, no glow, wide-tracked Michroma, generous space */
+body[data-theme="monolith"] {
+  --bg: #050505; --fg: #f5efe0; --dim: rgba(225, 212, 185, .55); --faint: rgba(232, 197, 116, .14); --line: rgba(232, 197, 116, .36);
+  --accent: #e8c574; --accent-rgb: 232, 197, 116; --accent2: #f5efe0; --accent2-rgb: 245, 239, 224; --engine: #e8c574; --hot: #fffaf0;
+  --ink: 8, 8, 8; --on-accent: #0b0905; --input: #0a0a0a;
+  --ui: 'Exo 2', 'Rajdhani', var(--cjk); --disp: 'Michroma', 'Orbitron', var(--cjk);
+  --glow: 0 0 0 transparent; --glow2: 0 0 0 transparent; --tglow: none;
+  --card-bg: linear-gradient(180deg, rgba(28, 26, 22, .92), rgba(8, 8, 8, .9)); --card-border: 0 solid transparent; --card-shadow: 0 30px 60px -24px rgba(0, 0, 0, .9);
+  --card-focus: inset 0 1px 0 var(--accent);
+  --gap: 18px; --tilt: 4deg; --title-track: .34em;
+}
+body[data-theme="monolith"] #hud { padding: 0 24px 14px; column-gap: 26px; }
+body[data-theme="monolith"] :is(#hud, #max-layer) .card { border-top: 1px solid rgba(232, 197, 116, .65); }
+body[data-theme="monolith"] .card .crn, body[data-theme="monolith"] .card::before, body[data-theme="monolith"] .card::after { display: none; }
+body[data-theme="monolith"] .card-h { background: none; border-bottom: 1px solid rgba(232, 197, 116, .14); height: 40px; padding-left: 16px; }
+body[data-theme="monolith"] .card-h::after { width: 24px; height: 1px; box-shadow: none; }
+body[data-theme="monolith"] .card-h .led { width: 4px; height: 4px; border-radius: 50%; box-shadow: none; }
+body[data-theme="monolith"] .card-h .title { font: 400 10.5px var(--disp); letter-spacing: .34em; color: var(--accent); text-shadow: none; }
+body[data-theme="monolith"] .card-h .code { border-color: rgba(232, 197, 116, .3); color: rgba(232, 197, 116, .7); }
+body[data-theme="monolith"] .tb-center::before { background: linear-gradient(90deg, transparent, rgba(232, 197, 116, .6), transparent); }
+body[data-theme="monolith"] .tb-title { font: 400 18px var(--disp); letter-spacing: .6em; color: var(--accent); text-shadow: none; }
+body[data-theme="monolith"] .kpi { clip-path: none; background: none; border: 0; border-top: 1px solid rgba(232, 197, 116, .4); }
+body[data-theme="monolith"] .kpi b { font: 400 22px var(--disp); color: var(--fg); text-shadow: none; }
+body[data-theme="monolith"] .cb-btn.run { background: var(--accent); color: #0b0905; box-shadow: none; }
+body[data-theme="monolith"] :is(.cb-btn, .rail-btn, .sb-ws button, .plan-chip, :where(#ticker), :where(#cmd)) { clip-path: none; }
+body[data-theme="monolith"] :is(#cmd, #ticker) { clip-path: none; }
+
+/* ══════════════════════════════════════════════════════════════════════════════════════════════
+   SPATIAL · MINIMAL
+   ══════════════════════════════════════════════════════════════════════════════════════════════ */
+/* GLASS — spatial computing: panels float as frosted slabs with wide gutters and 28 px radii, the top bar breaks into
+   floating capsules, titles in Sentence case, pill controls and a segmented workspace switcher */
+body[data-theme="glass"] {
+  --bg: #0b0d17; --fg: #eef0ff; --dim: rgba(220, 225, 255, .62); --faint: rgba(255, 255, 255, .1); --line: rgba(255, 255, 255, .22);
+  --accent: #a5b4ff; --accent-rgb: 165, 180, 255; --accent2: #ff9ad5; --accent2-rgb: 255, 154, 213; --engine: #a5b4ff; --hot: #ffffff;
+  --ink: 24, 27, 48; --on-accent: #0b0d17; --input: rgba(255, 255, 255, .06);
+  --ui: 'Exo 2', 'Rajdhani', var(--cjk); --disp: 'Exo 2', 'Orbitron', var(--cjk);
+  --glow: 0 6px 24px rgba(165, 180, 255, .28); --glow2: 0 6px 24px rgba(255, 154, 213, .28); --tglow: none;
+  --card-radius: 28px; --card-border: 1px solid rgba(255, 255, 255, .17);
+  --card-bg: linear-gradient(160deg, rgba(255, 255, 255, .15), rgba(255, 255, 255, .05) 42%, rgba(255, 255, 255, .03)), rgba(28, 32, 58, .58);
+  --card-shadow: inset 0 1px 0 rgba(255, 255, 255, .28), 0 34px 70px -22px rgba(0, 0, 0, .85); --card-focus: 0 0 0 1px rgba(255, 255, 255, .45), 0 0 40px rgba(165, 180, 255, .25);
+  --gap: 18px; --tilt: 4deg; --title-track: .01em;
+}
+body[data-theme="glass"] #hud { padding: 8px 24px 18px; column-gap: 24px; }
+body[data-theme="glass"] .card .crn, body[data-theme="glass"] .card::before, body[data-theme="glass"] .card::after { display: none; }
+body[data-theme="glass"] .card-h { height: 46px; padding: 0 10px 0 20px; background: none; border-bottom: 0; }
+body[data-theme="glass"] .card-h::after, body[data-theme="glass"] .card-h :is(.led, .code) { display: none; }
+body[data-theme="glass"] .card-h .ico { color: var(--accent); opacity: .9; }
+body[data-theme="glass"] .card-h .title { display: inline-block; font: 600 15px var(--ui); text-transform: lowercase; color: var(--hot); text-shadow: none; }
+body[data-theme="glass"] .card-h .title::first-letter { text-transform: uppercase; }
+body[data-theme="glass"] .card-btns button { width: 30px; height: 30px; border-radius: 50%; }
+body[data-theme="glass"] .card-body { padding: 4px 18px 16px; }
+body[data-theme="glass"] #topbar::before, body[data-theme="glass"] #topbar::after, body[data-theme="glass"] .tb-center::before, body[data-theme="glass"] .tb-center::after, body[data-theme="glass"] .tb-cell { display: none; }
+body[data-theme="glass"] :is(.tb-left, .tb-right) { align-self: center; height: 50px; padding: 0 12px; border-radius: 999px; background: rgba(28, 32, 58, .62); border: 1px solid rgba(255, 255, 255, .15);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), 0 18px 40px -16px rgba(0, 0, 0, .8); }
+body[data-theme="glass"] .tb-right { margin-left: auto; } body[data-theme="glass"] .tb-left { margin-right: auto; }
+body[data-theme="glass"] .tb-sep { display: none; }
+body[data-theme="glass"] .tb-title { font: 300 20px var(--disp); letter-spacing: .38em; text-shadow: none; }
+body[data-theme="glass"] .tb-sub { letter-spacing: .3em; } body[data-theme="glass"] .tb-sub i { background: rgba(255, 255, 255, .4); box-shadow: none; }
+body[data-theme="glass"] .tb-clock b { font-weight: 300; text-shadow: none; }
+body[data-theme="glass"] :is(.chip.stat, .sb-actions .ico-btn) { clip-path: none; border: 0; border-radius: 50%; background: rgba(255, 255, 255, .07); width: 36px; height: 36px; box-shadow: none; }
+body[data-theme="glass"] .chip.stat span { display: none; }
+body[data-theme="glass"] .sb-state { border-radius: 999px; border: 0; background: rgba(255, 255, 255, .08); }
+body[data-theme="glass"] :is(.cb-btn, .btn, .plan-chip, .suggest button) { clip-path: none; border-radius: 999px; border: 0; background: rgba(255, 255, 255, .1); }
+body[data-theme="glass"] .cb-btn.run { background: linear-gradient(135deg, #a5b4ff, #ff9ad5); color: #0b0d17; box-shadow: 0 8px 24px rgba(165, 180, 255, .35); }
+body[data-theme="glass"] :is(.cb-btn, .btn):hover:not(:disabled) { background: rgba(255, 255, 255, .2); transform: scale(1.04); }
+body[data-theme="glass"] #cmd { clip-path: none; height: 56px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .17); background: rgba(28, 32, 58, .7); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), 0 20px 50px -18px rgba(0, 0, 0, .9); padding-left: 22px; }
+body[data-theme="glass"] #cmd::before, body[data-theme="glass"] #cmd::after { display: none; }
+body[data-theme="glass"] #cmd .glyph { display: none; }
+body[data-theme="glass"] .rail-btn { clip-path: none; border-radius: 18px; border: 0; background: rgba(255, 255, 255, .07); }
+body[data-theme="glass"] .sb-ws { background: rgba(255, 255, 255, .08); border-radius: 999px; padding: 3px; }
+body[data-theme="glass"] .sb-ws button { clip-path: none; border: 0; border-radius: 999px; background: none; width: 46px; }
+body[data-theme="glass"] .sb-ws button.on { background: #fff; color: #0b0d17; box-shadow: 0 4px 14px rgba(0, 0, 0, .4); }
+body[data-theme="glass"] .kpi { clip-path: none; border-radius: 22px; border: 1px solid rgba(255, 255, 255, .14); background: rgba(28, 32, 58, .5); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .2); }
+body[data-theme="glass"] .kpi b { font: 300 30px/1.1 var(--disp); text-shadow: none; }
+body[data-theme="glass"] .kpi span { letter-spacing: .14em; }
+body[data-theme="glass"] .kpi i { left: 20px; right: 20px; border-radius: 2px; }
+body[data-theme="glass"] #ticker { clip-path: none; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .14); background: rgba(28, 32, 58, .6); }
+body[data-theme="glass"] .gz-readout { border: 0; border-radius: 16px; background: rgba(28, 32, 58, .45); }
+
+/* VISOR — a pilot's helmet HUD: NO panels at all, only light projected on the visor glass. Corner brackets, mono type,
+   a pitch ladder across the view, a dark curved helmet rim around the edges, the strongest wrap-around curvature. */
+body[data-theme="helmet"] {
+  --bg: #000; --fg: #c8ffd4; --dim: rgba(109, 255, 143, .55); --faint: rgba(109, 255, 143, .15); --line: rgba(109, 255, 143, .45);
+  --accent: #6dff8f; --accent-rgb: 109, 255, 143; --accent2: #ffd23f; --accent2-rgb: 255, 210, 63; --engine: #6dff8f; --hot: #eaffef;
+  --ink: 0, 12, 4; --on-accent: #001a07; --input: rgba(0, 20, 6, .5);
+  --ui: 'Share Tech Mono', var(--mono); --disp: 'Oxanium', 'Orbitron', var(--cjk); --hud: 'Share Tech Mono', var(--mono);
+  --glow: 0 0 6px rgba(109, 255, 143, .8); --tglow: 0 0 8px rgba(109, 255, 143, .8);
+  --card-bg: linear-gradient(180deg, rgba(0, 20, 6, .22), rgba(0, 20, 6, .1)); --card-border: 0 solid transparent; --card-shadow: none; --card-focus: 0 0 0 0 transparent;
+  --colw: clamp(250px, 19vw, 360px); --tilt: 13deg; --title-track: .2em;
+  text-shadow: 0 0 6px rgba(109, 255, 143, .55);
+}
+body[data-theme="helmet"] .card::before, body[data-theme="helmet"] .card::after { display: none; }
+body[data-theme="helmet"] .card .crn { width: 20px; height: 20px; border-color: var(--accent); }
+body[data-theme="helmet"] .card.focus .crn { width: 30px; height: 30px; }
+body[data-theme="helmet"] .card-h { background: none; border-bottom: 1px solid rgba(109, 255, 143, .35); }
+body[data-theme="helmet"] .card-h::after, body[data-theme="helmet"] .card-h :is(.led, .code) { display: none; }
+body[data-theme="helmet"] .card-h .title { font: 500 13px var(--disp); }
+body[data-theme="helmet"] .card-h .title::before { content: '▸ '; color: var(--accent2); }
+body[data-theme="helmet"] #topbar::before { background: linear-gradient(180deg, rgba(0, 0, 0, .7), transparent); }
+body[data-theme="helmet"] .tb-center::before, body[data-theme="helmet"] .tb-center::after { display: none; }
+body[data-theme="helmet"] .tb-title { font: 500 16px var(--disp); letter-spacing: .5em; }
+body[data-theme="helmet"] :is(.kpi, .plan-chip, :where(#ticker), .gz-readout) { clip-path: none; background: none; border: 0; box-shadow: none; }
+body[data-theme="helmet"] #ticker { clip-path: none; background: none; border: 0; box-shadow: none; }
+body[data-theme="helmet"] .kpi { border-left: 1px solid rgba(109, 255, 143, .35); }
+body[data-theme="helmet"] .kpi b { font: 500 26px/1.1 var(--hud); }
+body[data-theme="helmet"] :is(.cb-btn, .rail-btn, .sb-ws button, .chip.stat, .sb-actions .ico-btn) { clip-path: none; background: none; border: 1px solid rgba(109, 255, 143, .45); box-shadow: none; }
+body[data-theme="helmet"] :is(.cb-btn.run, .sb-ws button.on) { background: rgba(109, 255, 143, .2); color: var(--hot); border-color: var(--accent); }
+body[data-theme="helmet"] #cmd { clip-path: none; background: none; border: 0; border-bottom: 1px solid var(--accent); }
+/* the visor: a dark curved helmet rim, a faint green tint toward the edges */
+body[data-theme="helmet"] #vignette { background: radial-gradient(ellipse 62% 58% at 50% 48%, transparent 64%, rgba(0, 40, 14, .35) 82%, rgba(0, 0, 0, .96) 100%); }
+/* pitch ladder across the centre of view */
+body[data-theme="helmet"] #globe-zone::before { content: ''; position: absolute; left: 30%; right: 30%; top: 18%; bottom: 18%; pointer-events: none; opacity: .5;
+  background: repeating-linear-gradient(180deg, transparent 0 46px, rgba(109, 255, 143, .6) 46px 47px);
+  mask: linear-gradient(90deg, #000 0 22%, transparent 22% 78%, #000 78%); -webkit-mask: linear-gradient(90deg, #000 0 22%, transparent 22% 78%, #000 78%); }
+
+/* ARCTIC — white ice-glass panels with dark type over a polar night (the one light theme) */
+body[data-theme="arctic"] {
+  --bg: #030a14; --fg: #0b1d33; --dim: rgba(20, 45, 80, .62); --faint: rgba(47, 123, 255, .16); --line: rgba(47, 123, 255, .38);
+  --accent: #2f7bff; --accent-rgb: 47, 123, 255; --accent2: #ff5a36; --accent2-rgb: 255, 90, 54; --engine: #bfe6ff; --hot: #06142a;
+  --ink: 232, 243, 252; --on-accent: #ffffff; --input: #f4f9ff; --warn: #b26a00; --ok: #0a8f5a; --err: #d3202f;
+  --ui: 'Exo 2', 'Rajdhani', var(--cjk); --disp: 'Michroma', 'Orbitron', var(--cjk);
+  --glow: 0 0 0 1px rgba(47, 123, 255, .25), 0 8px 24px rgba(47, 123, 255, .18); --tglow: none;
+  --card-radius: 16px; --card-border: 1px solid rgba(255, 255, 255, .9);
+  --card-bg: linear-gradient(170deg, rgba(255, 255, 255, .96), rgba(226, 240, 252, .9));
+  --card-shadow: inset 0 1px 0 #fff, 0 30px 60px -20px rgba(0, 10, 30, .8), 0 0 0 1px rgba(47, 123, 255, .12);
+  --tilt: 6deg; --title-track: .24em;
+}
+body[data-theme="arctic"] .card .crn, body[data-theme="arctic"] .card::before { display: none; }
+body[data-theme="arctic"] .card-h { background: linear-gradient(90deg, rgba(47, 123, 255, .1), transparent 70%); border-bottom-color: rgba(47, 123, 255, .14); border-radius: 16px 16px 0 0; }
+body[data-theme="arctic"] .card-h .title { font: 400 11.5px var(--disp); color: #06142a; text-shadow: none; }
+body[data-theme="arctic"] .card .sheen > i { background: radial-gradient(circle, rgba(255, 255, 255, .7), rgba(255, 255, 255, .15) 30%, transparent 62%); }
+body[data-theme="arctic"] :is(#topbar, #kpi, #ticker, .gz-readout, #labels, #plan-strip, #sb-ws, .ws-wrap, .tb-left, .tb-right, #empty-state, .suggest) { --fg: #e9f6ff; --dim: rgba(200, 225, 250, .7); --hot: #ffffff; --ink: 10, 26, 46; --on-accent: #fff; --warn: #ffd23f; --ok: #6dffc4; --accent: #6fb0ff; --accent-rgb: 111, 176, 255; }
+body[data-theme="arctic"] .tb-title { font: 400 19px var(--disp); letter-spacing: .5em; color: #fff; text-shadow: 0 0 24px rgba(160, 210, 255, .6); }
+body[data-theme="arctic"] .kpi b { font-family: var(--disp); font-weight: 400; color: #fff; text-shadow: 0 0 18px rgba(160, 210, 255, .5); }
+body[data-theme="arctic"] #cmd { background: rgba(255, 255, 255, .94); border-color: #fff; border-radius: 26px; clip-path: none; }
+body[data-theme="arctic"] :is(.cb-btn, .rail-btn, .chip.stat, .sb-actions .ico-btn, .kpi, .toast) { border-radius: 12px; clip-path: none; }
+body[data-theme="arctic"] :is(.cb-btn, .rail-btn) { background: rgba(255, 255, 255, .9); color: #0b1d33; border-color: #fff; }
+body[data-theme="arctic"] .cb-btn.run { background: #2f7bff; color: #fff; border-color: #2f7bff; }
+
+/* the settings console and dialogs speak each language too */
+body:is([data-theme="glass"], [data-theme="aurora"], [data-theme="arctic"]) :is(.sc, .modal-box) { clip-path: none; border-radius: 28px; }
+body[data-theme="synthwave"] :is(.sc, .modal-box) { clip-path: none; border-radius: 18px; }
+body[data-theme="brutal"] :is(.sc, .modal-box) { clip-path: none; border: 3px solid #111; box-shadow: 14px 14px 0 #111; background: #f1eee6; }
+body[data-theme="brutal"] .sc-h { background: #ffe500; border-bottom: 3px solid #111; } body[data-theme="brutal"] .sc-h b { color: #111; text-shadow: none; font-family: var(--disp); }
+body[data-theme="terminal"] :is(.sc, .modal-box) { clip-path: none; border: 3px double var(--accent); box-shadow: none; }
+body[data-theme="blueprint"] :is(.sc, .modal-box) { clip-path: none; border: 1px solid rgba(232, 241, 255, .8); box-shadow: none; }
+body[data-theme="apollo"] :is(.sc, .modal-box) { clip-path: none; border: 12px solid var(--bezel); border-radius: 18px; box-shadow: 0 0 0 1px var(--bezel-lo), 0 40px 90px rgba(0, 0, 0, .8); }
+body[data-theme="mecha"] :is(.sc, .modal-box) { clip-path: polygon(0 0, calc(100% - 40px) 0, 100% 40px, 100% 100%, 0 100%); border-left: 12px solid var(--purple); }
+
+/* reduced motion / animations off: the signature loops rest */
+body.reduce-motion :is(#vignette, .tb-title::after) { animation: none !important; }
+
+/* ═════════ theme gallery (Settings → APPEARANCE): grouped by design language, each card a miniature of its anatomy ═════════ */
+.theme-family { grid-column: 1 / -1; margin: 6px 0 -4px; font: 700 10px var(--ui); letter-spacing: .32em; color: var(--dim); }
+.theme-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(178px, 1fr)); gap: 12px; }
+.theme-card { position: relative; height: 122px; padding: 0; overflow: hidden; text-align: left; border: 1px solid rgba(var(--accent-rgb), .2); border-radius: 10px;
+  background: var(--c3); transition: transform .25s cubic-bezier(.2,1,.3,1), border-color .2s; }
+.theme-card:hover, .theme-card.hand-hover { transform: translateY(-3px); border-color: var(--c1); }
+.theme-card.on { border-color: var(--c1); box-shadow: 0 0 0 1px var(--c1), 0 0 22px color-mix(in srgb, var(--c1) 45%, transparent); }
+.theme-card .tc-sky { position: absolute; inset: 0; background: radial-gradient(120% 70% at 50% 120%, color-mix(in srgb, var(--c1) 45%, transparent), transparent 60%), linear-gradient(180deg, var(--c3), color-mix(in srgb, var(--c1) 14%, var(--c3))); }
+.theme-card .tc-grid { position: absolute; left: -20%; right: -20%; bottom: -10px; height: 46px; opacity: .5; transform: perspective(120px) rotateX(55deg);
+  background: linear-gradient(var(--c1) 1px, transparent 1px) 0 0 / 100% 10px, linear-gradient(90deg, var(--c1) 1px, transparent 1px) 0 0 / 14px 100%; }
+.theme-card .tc-orb { position: absolute; right: 18px; top: 16px; width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--c1);
+  background: radial-gradient(circle at 35% 35%, color-mix(in srgb, var(--c1) 70%, #fff), transparent 60%); box-shadow: 0 0 18px var(--c1); }
+.theme-card .tc-panel { position: absolute; left: 12px; top: 12px; width: 78px; height: 52px; border: 1px solid color-mix(in srgb, var(--c1) 60%, transparent); border-top: 3px solid var(--c2);
+  background: color-mix(in srgb, var(--c3) 70%, transparent); }
+.theme-card b { position: absolute; left: 12px; bottom: 26px; font: 700 13px var(--tf, var(--disp)); letter-spacing: .12em; color: #fff; text-shadow: 0 0 10px var(--c1); }
+.theme-card small { position: absolute; left: 12px; right: 8px; bottom: 9px; font: 500 10.5px var(--ui); color: rgba(255, 255, 255, .72); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.theme-card .tc-check { position: absolute; right: 8px; bottom: 8px; width: 18px; height: 18px; border-radius: 50%; background: var(--c1); color: var(--c3); font: 700 12px/18px var(--ui); text-align: center; opacity: 0; }
+.theme-card.on .tc-check { opacity: 1; }
+.theme-card[data-t="brutal"] .tc-sky { background: #f1eee6; } .theme-card[data-t="brutal"] .tc-grid { display: none; }
+.theme-card[data-t="brutal"] .tc-panel { background: #ffe500; border: 3px solid #111; box-shadow: 6px 6px 0 #111; }
+.theme-card[data-t="brutal"] .tc-orb { border-radius: 0; background: #111; box-shadow: 4px 4px 0 #ffe500; border: 0; }
+.theme-card[data-t="brutal"] b { color: #111; text-shadow: none; font: 900 16px 'Arial Black', Arial; letter-spacing: -.02em; } .theme-card[data-t="brutal"] small { color: #333; }
+.theme-card[data-t="terminal"] .tc-panel { border: 3px double #ffb000; background: #0a0600; }
+.theme-card[data-t="terminal"] .tc-panel::before { content: '┤ LOG ├'; position: absolute; top: -10px; left: 6px; font: 400 13px 'VT323'; color: #ffb000; background: #0a0600; }
+.theme-card[data-t="terminal"] .tc-orb { display: none; } .theme-card[data-t="terminal"] b { font: 400 22px 'VT323'; color: #ffb000; }
+.theme-card[data-t="blueprint"] .tc-sky { background: linear-gradient(rgba(232, 241, 255, .1) 1px, transparent 1px) 0 0 / 12px 12px, linear-gradient(90deg, rgba(232, 241, 255, .1) 1px, transparent 1px) 0 0 / 12px 12px, #0b2d5c; }
+.theme-card[data-t="blueprint"] .tc-panel { background: none; border: 1px solid #e8f1ff; border-bottom-width: 8px; } .theme-card[data-t="blueprint"] .tc-orb { background: none; box-shadow: none; border-style: dashed; }
+.theme-card[data-t="blueprint"] b { font: 400 12px 'Michroma'; text-shadow: none; }
+.theme-card[data-t="apollo"] .tc-panel { border: 6px solid #c9bfa5; border-top-width: 10px; border-radius: 8px; background: #0e140f; box-shadow: inset 0 0 10px #000; }
+.theme-card[data-t="apollo"] .tc-orb { border-radius: 6px; background: linear-gradient(#ffd0a6, #ff8a3d); box-shadow: 0 3px 0 #9a4310, 0 0 12px #ff8a3d; border: 0; }
+.theme-card[data-t="apollo"] b { font: 400 12px 'Michroma'; }
+.theme-card[data-t="mecha"] .tc-panel { border: 1px solid #9dff00; border-left: 12px solid #5b2bd6; clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%); }
+.theme-card[data-t="mecha"] .tc-sky::after { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 6px; background: repeating-linear-gradient(-45deg, #ff6a00 0 6px, #000 6px 12px); }
+.theme-card[data-t="mecha"] b { font: 700 15px 'Chakra Petch'; font-style: italic; color: #9dff00; }
+.theme-card[data-t="glass"] .tc-panel { border-radius: 14px; border: 1px solid rgba(255, 255, 255, .3); background: rgba(255, 255, 255, .12); box-shadow: 0 10px 20px rgba(0, 0, 0, .5); }
+.theme-card[data-t="glass"] b { font: 300 15px 'Exo 2'; letter-spacing: .2em; text-shadow: none; }
+.theme-card[data-t="helmet"] .tc-panel { background: none; border: 0; box-shadow: inset 8px 8px 0 -6px #6dff8f, inset -8px -8px 0 -6px #6dff8f; }
+.theme-card[data-t="helmet"] .tc-sky { background: radial-gradient(ellipse 60% 55% at 50% 50%, #04140a 60%, #000 100%); }
+.theme-card[data-t="helmet"] b { font: 500 13px 'Share Tech Mono'; }
+.theme-card[data-t="arctic"] .tc-panel { background: #fff; border: 0; border-radius: 8px; }
+.theme-card[data-t="synthwave"] b { font: 400 15px 'Audiowide'; } .theme-card[data-t="neon"] b { font: 700 15px 'Tektur'; }
+.theme-card[data-t="monolith"] b { font: 400 11px 'Michroma'; letter-spacing: .3em; color: #e8c574; text-shadow: none; }
+.theme-card[data-t="aurora"] b { font: 300 15px 'Exo 2'; letter-spacing: .3em; }

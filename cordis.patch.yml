@@ -1,0 +1,5 @@
+# dsh-plugin-command-deck bundle layer: one Host entry. Its id is also the settings namespace the
+# Command Deck console writes (Settings → Command Deck); values land in your profile's cordis.patch.yml.
+- insert:
+    - id: command-deck
+      name: dsh-plugin-command-deck

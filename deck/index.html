@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>COMMAND//DECK</title>
+  <meta name="color-scheme" content="dark">
+  <link rel="stylesheet" href="css/deck.css">
+  <link rel="stylesheet" href="css/themes.css">
+  <!-- No build step: bare imports resolve to vendored files -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./vendor/three/three.module.js",
+      "@localmode/core": "./vendor/localmode/core.js",
+      "@localmode/mediapipe": "./vendor/localmode/mediapipe.js",
+      "@mediapipe/tasks-vision": "./vendor/mediapipe/vision_bundle.mjs"
+    }
+  }
+  </script>
+</head>
+<body data-theme="jarvis" data-state="idle" class="booting">
+  <!-- layer 0: WebGL orbital scene (canvas#space, inserted by space.js) · 2D rain fallback without WebGL -->
+  <!-- everything inside #zoom-root is the deck “screen” the gesture magnifier scales (ui/zoom.js) -->
+  <div id="zoom-root">
+  <canvas id="rain" aria-hidden="true" hidden></canvas>
+  <!-- layer 1: open space — drag spins the globe, wheel zooms, right-click = radial menu -->
+  <main id="stage" data-i18n-aria="Orbital view: drag to spin the globe, scroll to zoom, right-click for the radial menu" aria-label="Orbital view: drag to spin the globe, scroll to zoom, right-click for the radial menu"></main>
+  <div id="labels" aria-hidden="true"></div>
+
+  <!-- layer 2: HUD grid -->
+  <i id="beam" aria-hidden="true"></i>
+  <i id="vignette" aria-hidden="true"></i>
+  <div id="hud">
+    <header id="topbar">
+      <div class="tb-left">
+        <div class="tb-clock"><b id="clock">--:--:--</b><span id="date">----</span></div>
+        <div class="tb-cell"><span data-i18n>MISSION T+</span><b id="mission">00:00:00</b></div>
+        <button class="sb-state" id="sb-state" data-i18n-title="Agent state (click to dismiss an error)" title="Agent state (click to dismiss an error)">
+          <i class="dot"></i><b id="sb-state-label">IDLE</b><span id="sb-state-sub"></span>
+        </button>
+        <div class="sb-chips">
+          <button class="chip stat" id="chip-privacy" data-i18n-title="Privacy: camera frames are never drawn or uploaded" title="Privacy: camera frames are never drawn or uploaded" aria-label="Privacy: camera frames are never drawn or uploaded"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg><i></i><span>SKEL</span></button>
+          <button class="chip stat" id="chip-perf" data-i18n-title="Performance mode (Settings)" title="Performance mode (Settings)" aria-label="Performance mode (Settings)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 17a8.5 8.5 0 1 1 15 0"/><path d="m12 13 4-5"/><circle cx="12" cy="13.5" r="1.4"/></svg><i></i><span>FPS</span></button>
+        </div>
+      </div>
+      <div class="tb-center">
+        <button class="tb-title glitch" id="sb-logo" data-text="COMMAND//DECK" data-i18n-title="Welcome screen" title="Welcome screen">COMMAND//DECK</button>
+        <div class="tb-sub"><i></i><span data-i18n>PLANETARY AGENT COMMAND</span><i></i><span id="chip-mode" title="Agent framework / model"></span></div>
+      </div>
+      <div class="tb-right">
+        <div class="sb-chips">
+          <button class="chip stat ai" id="chip-ai" data-i18n-title="AI engine — click to configure" title="AI engine — click to configure" aria-label="AI engine — click to configure"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1.5"/><path d="M9.5 9.5h5v5h-5zM9 3v3M15 3v3M9 18v3M15 18v3M3 9h3M3 15h3M18 9h3M18 15h3"/></svg><i></i><span>AI</span></button>
+          <button class="chip stat" id="chip-net" data-i18n-title="Backend link / round-trip time" title="Backend link / round-trip time" aria-label="Backend link / round-trip time"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 18.5a10.5 10.5 0 0 1 15 0"/><path d="M7.5 15.5a6.4 6.4 0 0 1 9 0"/><circle cx="12" cy="19" r="1.3"/></svg><i></i><span>LINK</span></button>
+          <button class="chip stat" id="chip-call" data-i18n-title="Voice call (C)" title="Voice call (C)" aria-label="Voice call (C)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3.5h3.2l1.6 4.3-2 1.3a11 11 0 0 0 7.1 7.1l1.3-2 4.3 1.6V19a1.5 1.5 0 0 1-1.6 1.5A16.5 16.5 0 0 1 3.5 5.1 1.5 1.5 0 0 1 5 3.5z"/></svg><i></i><span>CALL</span></button>
+          <button class="chip stat" id="chip-gesture" data-i18n-title="Hand gestures (H)" title="Hand gestures (H)" aria-label="Hand gestures (H)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 12V5.5a1.5 1.5 0 0 1 3 0V11"/><path d="M11 10V4a1.5 1.5 0 0 1 3 0v6"/><path d="M14 10.5V5.5a1.5 1.5 0 0 1 3 0V13"/><path d="M8 11.5 6.6 10a1.6 1.6 0 0 0-2.4 2.1L7.5 17c1.4 2.2 3 3.5 6 3.5 3.2 0 5-2.2 5-5.5v-4a1.5 1.5 0 0 0-1.5-1.5"/></svg><i></i><span>HAND</span></button>
+        </div>
+        <i class="tb-sep" aria-hidden="true"></i>
+        <div class="sb-actions">
+          <button class="sb-btn ico-btn lang" id="chip-lang" data-i18n-title="Interface language English / 中文 (L)" title="Interface language English / 中文 (L)" aria-label="Language"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.6 3.8 5.6 3.8 9s-1.2 6.4-3.8 9c-2.6-2.6-3.8-5.6-3.8-9S9.4 5.6 12 3z"/></svg><b class="en">EN</b><b class="zh">中</b></button>
+          <button class="sb-btn ico-btn" id="btn-lock" data-i18n-title="Lock layout (Shift+L)" title="Lock layout (Shift+L)" aria-label="Lock layout (Shift+L)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10.5" width="14" height="9.5" rx="1.5"/><path class="shackle" d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg></button>
+          <button class="sb-btn ico-btn" id="btn-history" data-i18n-title="Task history & favorites" title="Task history & favorites" aria-label="Task history & favorites"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3 4v4h4M12 7.5V12l3 2"/></svg></button>
+          <button class="sb-btn ico-btn" id="btn-notify" data-i18n-title="Notifications" title="Notifications" aria-label="Notifications"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5h4"/></svg><b id="notify-count" hidden>0</b></button>
+          <button class="sb-btn ico-btn" id="btn-palette" data-i18n-title="Command palette (Ctrl/⌘K)" title="Command palette (Ctrl/⌘K)" aria-label="Command palette (Ctrl/⌘K)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6.5A2.5 2.5 0 1 0 6.5 9H9zM15 6.5A2.5 2.5 0 1 1 17.5 9H15zM9 17.5A2.5 2.5 0 1 1 6.5 15H9zM15 17.5a2.5 2.5 0 1 0 2.5-2.5H15zM9 9h6v6H9z"/></svg></button>
+          <button class="sb-btn ico-btn" id="btn-full" data-i18n-title="Full screen (Shift+F)" title="Full screen (Shift+F)" aria-label="Full screen (Shift+F)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="fs-in" d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/><path class="fs-out" d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg></button>
+          <div class="menu-wrap">
+            <button class="sb-btn ico-btn reset" id="btn-reset-ui" data-i18n-title="Reset UI (R · Shift+R)" title="Reset UI (R · Shift+R)" aria-label="Reset UI (R · Shift+R)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.6-5.9"/><path d="M4 4v4.5h4.5"/></svg></button>
+            <div class="menu-pop" id="reset-menu" hidden>
+              <button data-reset="layout"><b data-i18n>Reset layout</b><span data-i18n>default panels &amp; docks, camera, close overlays · keeps results, history, favorites</span></button>
+              <button data-reset="all"><b data-i18n>Reset everything</b><span data-i18n>layout + results + settings + call/gestures · keeps history &amp; favorites</span></button>
+            </div>
+          </div>
+          <button class="sb-btn ico-btn exit" id="btn-exit" hidden data-i18n-title="Exit the Command Deck — back to DeepSeek Harness" title="Exit the Command Deck — back to DeepSeek Harness" aria-label="Exit the Command Deck — back to DeepSeek Harness"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 5.5 4 12l5.5 6.5"/><path d="M4 12h10.5"/><path d="M14 5.5h4.5A1.5 1.5 0 0 1 20 7v10a1.5 1.5 0 0 1-1.5 1.5H14"/></svg></button>
+        </div>
+      </div>
+    </header>
+
+    <aside class="dock col" id="dock-left" data-i18n-aria="Left dock" aria-label="Left dock"></aside>
+
+    <section id="center" aria-label="Centre stage">
+      <div id="kpi">
+        <div class="kpi" data-k="results"><span data-i18n>SOURCES</span><b>0</b><i></i></div>
+        <div class="kpi" data-k="domains"><span data-i18n>DOMAINS</span><b>0</b><i></i></div>
+        <div class="kpi hero" data-k="state"><span data-i18n>AGENT STATUS</span><b id="kpi-state">STANDBY</b><i id="kpi-progress"></i></div>
+        <div class="kpi" data-k="downloaded"><span data-i18n>IMAGES</span><b>0</b><i></i></div>
+        <div class="kpi" data-k="elapsed"><span data-i18n>ELAPSED · S</span><b>0.0</b><i></i></div>
+      </div>
+      <div id="plan-strip" aria-live="polite"></div>
+      <div id="globe-zone">
+        <div id="gesture-hud" hidden><b id="g-name">—</b><span id="g-hint"></span><i class="conf"><i id="g-conf"></i></i></div>
+        <div id="gesture-legend" hidden></div>
+        <section id="call-dock" hidden aria-live="polite">
+          <div class="cd-top"><i class="cd-dot"></i><b id="cd-state">IN CALL</b><i class="cd-hold" aria-hidden="true"></i><span id="cd-timer">00:00</span></div>
+          <div class="cd-who"><span class="who you" id="who-you"><i></i><span data-i18n>YOU</span></span><span class="who deck" id="who-deck"><i></i>DECK</span></div>
+          <canvas id="cd-wave" data-wave aria-hidden="true"></canvas>
+          <div class="cd-meter" id="cd-meter" data-i18n-title="Mic level · noise floor · speech threshold" title="Mic level · noise floor · speech threshold"><i class="lv"></i><i class="fl"></i><i class="th"></i><b class="st"></b></div>
+          <div class="cd-line" id="cd-line"></div>
+          <div class="cd-btns"><button id="cd-mute" data-i18n-title="Mute (M)" title="Mute (M)">MUTE</button><button id="cd-hang" class="hang" data-i18n-title="Hang up (C)" title="Hang up (C)" data-i18n>HANG UP</button></div>
+        </section>
+        <div class="gz-readout left" aria-hidden="true"><span data-i18n>LAT</span><b id="ro-lat">00.0</b><span data-i18n>LON</span><b id="ro-lon">000.0</b><span data-i18n>THRUST</span><b id="ro-thrust">22%</b></div>
+        <div class="gz-readout right" aria-hidden="true"><span data-i18n>LINK</span><b id="ro-link">—</b><span>FPS</span><b id="ro-fps">—</b><span data-i18n>TOOLS</span><b id="ro-tools">0</b></div>
+      </div>
+      <div id="ticker"><i></i><span id="ticker-text" data-i18n>DECK ONLINE · AWAITING COMMAND</span></div>
+    </section>
+
+    <aside class="dock col" id="dock-right" aria-label="Right dock"></aside>
+    <section class="dock row" id="dock-bottom" aria-label="Bottom dock"></section>
+
+    <footer id="cmdbar">
+      <nav id="help-rail" aria-label="Help"></nav>
+      <div class="cmd-wrap">
+        <div class="cmd-over"><span id="voice-line"></span><span class="suggest" id="suggest"></span></div>
+        <form id="cmd" autocomplete="off">
+          <span class="glyph">deck://</span>
+          <input id="prompt" type="text" maxlength="2000" spellcheck="false"
+                 data-i18n-ph="Say or type anything, English or 中文 — “weather in Tokyo”, “find me images of Saturn”, “open the images panel”…" placeholder="Say or type anything" aria-label="Command">
+          <canvas id="wave" data-wave aria-hidden="true"></canvas>
+          <button type="button" class="cb-btn talk" id="btn-talk" data-i18n-title="Talk: say one instruction, it runs when you stop (V)" title="Talk: say one instruction, it runs when you stop (V)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg><span data-i18n>TALK</span></button>
+          <button type="button" class="cb-btn call" id="btn-call" data-i18n-title="Start a continuous voice call (C)" title="Start a continuous voice call (C)">CALL</button>
+          <button type="submit" class="cb-btn run" id="btn-run" data-i18n>RUN</button>
+          <button type="button" class="cb-btn" id="btn-pause" disabled data-i18n-title="Pause / resume (P)" title="Pause / resume (P)">PAUSE</button>
+          <button type="button" class="cb-btn stop" id="btn-stop" disabled data-i18n-title="Interrupt (Esc)" title="Interrupt (Esc)" data-i18n>STOP</button>
+        </form>
+      </div>
+      <div class="ws-wrap"><span data-i18n>WORKSPACE</span><nav class="sb-ws" id="sb-ws" aria-label="Workspaces"></nav></div>
+    </footer>
+  </div>
+
+  <!-- screen frame (Jarvis / orbital HUD bezel) -->
+  <svg id="frame" aria-hidden="true"></svg>
+  <!-- v5.3 ambient light: energy pulses along the bezel + a slow sweep beam (transform/opacity only) -->
+  <div id="frame-fx" aria-hidden="true"><i class="fp t"></i><i class="fp b"></i><i class="fp l"></i><i class="fp r"></i></div>
+
+  <div id="max-layer"></div>
+  <div id="empty-state" hidden></div>
+  </div><!-- /#zoom-root -->
+  <div id="zoom-hud" hidden></div>
+  <div id="offline" hidden><b data-i18n>OFFLINE</b> <span id="offline-msg">backend unreachable — reconnecting…</span><button id="offline-retry" data-i18n>RETRY NOW</button></div>
+  <div id="float-layer"></div>
+
+  <!-- drawers & modals -->
+  <aside class="drawer left" id="drawer-history" hidden></aside>
+  <aside class="drawer right" id="drawer-notify" hidden></aside>
+  <div class="modal" id="palette" hidden></div>
+  <div class="modal" id="lightbox" hidden></div>
+  <div class="modal" id="consent" hidden></div>
+  <div class="modal" id="confirm" hidden></div>
+  <div id="welcome" hidden></div>
+  <div id="radial" hidden></div>
+  <div id="tour" hidden></div>
+  <div id="settings-console" hidden role="dialog" aria-modal="true"></div>
+
+  <!-- hand layer (privacy: landmarks only, never camera pixels) -->
+  <canvas id="skeleton" aria-hidden="true"></canvas>
+  <div class="hcursor" id="hcursor-0" hidden><i class="ring"></i><i class="tick"></i><svg class="hold"><circle r="26" cx="30" cy="30"/></svg><span class="lbl"></span></div>
+  <div class="hcursor b" id="hcursor-1" hidden><i class="ring"></i><i class="tick"></i><svg class="hold"><circle r="26" cx="30" cy="30"/></svg><span class="lbl"></span></div>
+  <div id="two-hand" hidden><svg><line id="th-line"/></svg><span id="th-readout"></span></div>
+
+  <canvas id="fx" aria-hidden="true"></canvas>
+  <div id="toasts" aria-live="polite"></div>
+
+  <script type="module" src="js/main.js"></script>
+  <i id="theme-wave" aria-hidden="true"></i>
+</body>
+</html>
